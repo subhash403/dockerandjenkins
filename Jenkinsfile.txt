@@ -1,34 +1,41 @@
-node {
-  // Mark the code checkout 'stage'....
-  stage 'Stage Checkout'
+pipeline {
 
-  // Checkout code from repository and update any submodules
-  checkout scm
-  sh 'git submodule update --init'  
+    agent any
 
-  stage 'Stage Build'
+    tools {
 
-  //branch name from Jenkins environment variables
-  echo "My branch is: ${env.BRANCH_NAME}"
+        jdk 'jdk7'
 
-  def flavor = flavor(env.BRANCH_NAME)
-  echo "Building flavor ${flavor}"
+        maven 'maven3'
 
-  //build your gradle flavor, passes the current build number as a parameter to gradle
-  sh "./gradlew clean assemble${flavor}Debug -PBUILD_NUMBER=${env.BUILD_NUMBER}"
+    }
 
-  stage 'Stage Archive'
-  //tell Jenkins to archive the apks
-  archiveArtifacts artifacts: 'app/build/outputs/apk/*.apk', fingerprint: true
+    stages {
 
-  stage 'Stage Upload To Fabric'
-  sh "./gradlew crashlyticsUploadDistribution${flavor}Debug  -PBUILD_NUMBER=${env.BUILD_NUMBER}"
-}
+        stage('test java installation') {
 
-// Pulls the android flavor out of the branch name the branch is prepended with /QA_
-@NonCPS
-def flavor(branchName) {
-  def matcher = (env.BRANCH_NAME =~ /QA_([a-z_]+)/)
-  assert matcher.matches()
-  matcher[0][1]
+            steps {
+
+                sh 'java -version'
+
+                sh 'which java'
+
+            }
+
+        }
+
+        stage('test maven installation') {
+
+            steps {
+
+                sh 'mvn -version'
+
+                sh 'which mvn'
+
+            }
+
+        }
+
+    }
+
 }
